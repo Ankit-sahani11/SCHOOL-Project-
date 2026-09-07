@@ -3,58 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>School Project - Graphing Calculator</title>
-  <!-- Desmos API script -->
+  <title>Super Desmos Advanced</title>
   <script src="https://www.desmos.com/api/v1.9/calculator.js?apiKey=d322203be4f22e3278d4da15db9a05a8"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { display: flex; height: 100vh; background-color: #f4f6f8; }
+    :root {
+      --bg: #0d1117; --sidebar-bg: #161b22; --text: #c9d1d9; --border: #30363d;
+      --primary: #58a6ff; --btn-bg: #21262d; --btn-hover: #30363d;
+    }
+    [data-theme="light"] {
+      --bg: #ffffff; --sidebar-bg: #f6f8fa; --text: #24292f; --border: #d0d7de;
+      --primary: #0969da; --btn-bg: #ebf0f4; --btn-hover: #d0d7de;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg); color: var(--text); overflow: hidden; transition: background 0.3s, color 0.3s; }
     
-    /* Left Customizing UI Sidebar */
-    .sidebar { width: 320px; background: #ffffff; padding: 20px; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; gap: 15px; }
-    .sidebar h2 { font-size: 20px; color: #333; margin-bottom: 10px; }
-    .input-group { display: flex; flex-direction: column; gap: 5px; }
-    .input-group label { font-size: 14px; color: #666; font-weight: 600; }
-    .input-group input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; outline: none; }
-    .btn { background: #007bff; color: white; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn:hover { background: #0056b3; }
+    /* Navbar */
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--sidebar-bg); border-bottom: 1px solid var(--border); }
+    .nav-left, .nav-right { display: flex; gap: 10px; align-items: center; }
+    .title { font-weight: bold; font-size: 18px; }
     
-    /* Right Plotting Area */
-    .plot-container { flex: 1; height: 100vh; }
+    /* Buttons */
+    .btn { background: var(--btn-bg); color: var(--text); padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: var(--btn-hover); }
+    .btn-primary { background: var(--primary); color: #fff; border: none; }
+    .btn-primary:hover { opacity: 0.9; }
+    .menu-toggle { display: none; background: transparent; border: none; color: var(--text); font-size: 24px; cursor: pointer; }
+
+    /* Layout */
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    
+    /* Sidebar */
+    .sidebar { width: 340px; background: var(--sidebar-bg); padding: 20px; border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; gap: 20px; transition: transform 0.3s ease; }
+    .category-title { font-size: 12px; color: var(--text); text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 5px; opacity: 0.8; }
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+
+    /* Plot Container */
+    .plot-container { flex: 1; height: 100%; }
     #calculator { width: 100%; height: 100%; }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .menu-toggle { display: block; }
+      .sidebar { position: absolute; z-index: 100; height: calc(100vh - 50px); transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.5); }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Left Sidebar Controls -->
-  <div class="sidebar">
-    <h2>Graph Controls</h2>
-    <div class="input-group">
-      <label for="eqInput">Equation (e.g., y = x^2 or y = sin(x))</label>
-      <input type="text" id="eqInput" placeholder="Enter equation..." value="y = x^2">
+  <div class="navbar">
+    <div class="nav-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="title">Super Desmos</div>
     </div>
-    <button class="btn" onclick="plotEquation()">Plot Graph</button>
+    <div class="nav-right">
+      <button class="btn" onclick="toggleTheme()">🌓 Theme</button>
+      <button class="btn btn-primary" onclick="saveGraph()">Save</button>
+      <button class="btn" onclick="loadGraph()">Load</button>
+    </div>
   </div>
 
-  <!-- Right Plotting Area -->
-  <div class="plot-container">
-    <div id="calculator"></div>
+  <div class="main-container">
+    <div class="sidebar" id="sidebar">
+      <div>
+        <div class="category-title">Dynamic & Animations</div>
+        <div class="preset-grid">
+          <button class="btn" onclick="loadPreset('animation')">Wave Slider</button>
+          <button class="btn" onclick="loadPreset('table')">Data Table</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="category-title">Calculus</div>
+        <div class="preset-grid">
+          <button class="btn" onclick="loadPreset('derivative')">Derivatives</button>
+          <button class="btn" onclick="loadPreset('integral')">Integrals</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="category-title">Statistics</div>
+        <div class="preset-grid">
+          <button class="btn" onclick="loadPreset('normal')">Normal Dist.</button>
+          <button class="btn" onclick="loadPreset('regression')">Linear Reg.</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="category-title">Advanced Geometry</div>
+        <div class="preset-grid">
+          <button class="btn" onclick="loadPreset('parametric')">Parametric</button>
+          <button class="btn" onclick="loadPreset('implicit')">Implicit</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="plot-container">
+      <div id="calculator"></div>
+    </div>
   </div>
 
   <script>
-    // Initialize Desmos Calculator
-    var elt = document.getElementById('calculator');
-    var calculator = Desmos.GraphingCalculator(elt, { expressions: true, settingsMenu: false });
+    // Initialize Desmos with full UI enablement
+    const elt = document.getElementById('calculator');
+    const calculator = Desmos.GraphingCalculator(elt, { 
+      expressions: true, 
+      keypad: true, 
+      settingsMenu: true, 
+      zoomButtons: true,
+      invertedColors: true // Default to match dark theme
+    });
 
-    // Set Default Graph
-    calculator.setExpression({ id: 'graph1', latex: 'y=x^2' });
+    let isDark = true;
 
-    // Function to update graph from input
-    function plotEquation() {
-      var eq = document.getElementById('eqInput').value;
-      if (eq.trim() !== "") {
-        calculator.setExpression({ id: 'graph1', latex: eq });
+    // Theme Management
+    function toggleTheme() {
+      isDark = !isDark;
+      document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      calculator.updateSettings({ invertedColors: isDark });
+    }
+
+    // State Management
+    function saveGraph() {
+      const state = calculator.getState();
+      localStorage.setItem('super_desmos_state', JSON.stringify(state));
+      alert('Graph workspace saved locally!');
+    }
+
+    function loadGraph() {
+      const saved = localStorage.getItem('super_desmos_state');
+      if (saved) {
+        calculator.setState(JSON.parse(saved));
+      } else {
+        alert('No saved graph found.');
       }
+    }
+
+    // Mobile Sidebar
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // Preset Injection Engine
+    function loadPreset(type) {
+      calculator.setBlank(); // Clear canvas
+      
+      const presets = {
+        animation: [
+          { id: '1', latex: 'y = a \\sin(bx - c)' },
+          { id: '2', latex: 'a = 2', sliderBounds: { min: -5, max: 5 } },
+          { id: '3', latex: 'b = 3', sliderBounds: { min: -10, max: 10 } },
+          { id: '4', latex: 'c = 0', sliderBounds: { min: 0, max: '2\\pi' }, playing: true }
+        ],
+        table: [
+          { 
+            type: 'table', 
+            columns: [
+              { latex: 'x_1', values: ['1', '2', '3', '4', '5'] },
+              { latex: 'y_1', values: ['2', '4', '5', '4', '6'] }
+            ]
+          },
+          { id: 'fit', latex: 'y_1 \\sim m x_1 + b' }
+        ],
+        derivative: [
+          { id: 'f', latex: 'f(x) = x^3 - 4x' },
+          { id: 'df', latex: 'y = \\frac{d}{dx}f(x)' }
+        ],
+        integral: [
+          { id: 'g', latex: 'g(x) = \\sin(x)' },
+          { id: 'int', latex: 'y = \\int_{0}^{x} g(t) dt' }
+        ],
+        normal: [
+          { id: 'dist', latex: 'y = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2}' },
+          { id: 'mu', latex: '\\mu = 0' },
+          { id: 'sigma', latex: '\\sigma = 1', sliderBounds: { min: 0.1, max: 5 } }
+        ],
+        regression: [
+          { 
+            type: 'table', 
+            columns: [
+              { latex: 'x_2', values: ['-2', '-1', '0', '1', '2'] },
+              { latex: 'y_2', values: ['3', '1', '2', '5', '8'] }
+            ]
+          },
+          { id: 'reg', latex: 'y_2 \\sim a x_2^2 + b x_2 + c' }
+        ],
+        parametric: [
+          { id: 'para', latex: '(\\sin(at), \\cos(bt))' },
+          { id: 'a', latex: 'a = 3' },
+          { id: 'b', latex: 'b = 2' }
+        ],
+        implicit: [
+          { id: 'heart', latex: '(x^2 + y^2 - 1)^3 - x^2y^3 = 0', color: Desmos.Colors.RED }
+        ]
+      };
+
+      if (presets[type]) {
+        calculator.setExpressions(presets[type]);
+      }
+      
+      // Auto-close sidebar on mobile after selection
+      if (window.innerWidth <= 768) toggleSidebar();
     }
   </script>
 </body>
